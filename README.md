@@ -4,7 +4,7 @@ Student Name: Bhavya
 Course: DevOps  
 
 ## Overview
-AI-powered tool that reviews and explains code using GitHub CI/CD and Agile workflow.
+AI-powered tool that reviews and explains code using GitHub CI/CD and Agile workflow
 
 ## Features
 - AI code review

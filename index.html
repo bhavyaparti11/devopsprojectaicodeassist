@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>AI Code Assist 💅</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
     <style>
         body {
             margin: 0;
@@ -34,6 +36,8 @@
             padding: 10px;
             font-size: 14px;
             resize: none;
+            /* Added so padding doesn't stretch the box out of the container */
+            box-sizing: border-box; 
         }
 
         .buttons {
@@ -71,8 +75,23 @@
             background: #f9f9f9;
             border-radius: 10px;
             min-height: 80px;
-            white-space: pre-wrap;
+            white-space: normal; /* CHANGED: from pre-wrap so HTML renders normally */
+            
+            /* ADDED: The scrolling thingy! */
+            max-height: 300px; 
+            overflow-y: auto; 
         }
+
+        /* ADDED: Scrollbar styling */
+        #output::-webkit-scrollbar { width: 8px; }
+        #output::-webkit-scrollbar-track { background: transparent; }
+        #output::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        #output::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* ADDED: Styling to make the AI's code blocks look good */
+        pre { background: #1e293b; color: #f8f8f2; padding: 15px; border-radius: 6px; overflow-x: auto; font-family: monospace; font-size: 13px; }
+        code { background: #e2e8f0; padding: 2px 5px; border-radius: 4px; color: #be185d; font-family: monospace; }
+        pre code { background: transparent; color: inherit; padding: 0; }
     </style>
 </head>
 
@@ -94,6 +113,10 @@
 <script>
 async function explainCode() {
     const code = document.getElementById("code").value;
+    const output = document.getElementById("output");
+    
+    if (!code.trim()) return;
+    output.innerHTML = "Thinking... ⚡"; // Loading state
 
     const res = await fetch("http://localhost:3000/explain", {
         method: "POST",
@@ -104,11 +127,20 @@ async function explainCode() {
     });
 
     const data = await res.json();
-    document.getElementById("output").innerText = data.explanation;
+    // CHANGED: Use marked.parse and innerHTML to render Markdown
+    if(data.explanation) {
+        output.innerHTML = marked.parse(data.explanation);
+    } else {
+        output.innerHTML = "Error getting explanation.";
+    }
 }
 
 async function reviewCode() {
     const code = document.getElementById("code").value;
+    const output = document.getElementById("output");
+
+    if (!code.trim()) return;
+    output.innerHTML = "Reviewing... ⚡"; // Loading state
 
     const res = await fetch("http://localhost:3000/review", {
         method: "POST",
@@ -119,7 +151,38 @@ async function reviewCode() {
     });
 
     const data = await res.json();
-    document.getElementById("output").innerText = data.review;
+    // CHANGED: Use marked.parse and innerHTML to render Markdown
+    if(data.review) {
+        output.innerHTML = marked.parse(data.review);
+    } else {
+        output.innerHTML = "Error getting review.";
+    }
+}
+
+// I kept this function for you exactly as requested! (Just updated it to support marked.js so it doesn't break if you use it later)
+async function handleAction(endpoint) {
+    // Note: your textarea ID is "code" but this looks for "codeBody"
+    const codeElement = document.getElementById('codeBody') || document.getElementById('code');
+    const code = codeElement.value;
+    const output = document.getElementById('output');
+    output.innerHTML = "Thinking...";
+
+    try {
+        const response = await fetch(`http://localhost:3000/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+        
+        const data = await response.json();
+
+        // Check for both possible keys (review OR explanation)
+        const result = data.review || data.explanation || data.error;
+        output.innerHTML = result ? marked.parse(result) : "Empty response from AI.";
+        
+    } catch (err) {
+        output.innerHTML = "Failed to fetch. Is the server running?";
+    }
 }
 </script>
 

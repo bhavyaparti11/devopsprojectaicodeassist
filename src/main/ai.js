@@ -1,51 +1,37 @@
 require("dotenv").config();
 const axios = require("axios");
 
-const API_URL = "https://api.openai.com/v1/chat/completions";
+const API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 async function askAI(prompt) {
-    const res = await axios.post(
-        API_URL,
-        {
-            model: "gpt-4.1-mini",
-            messages: [
-                {
-                    role: "user",
-                    content: prompt
+    try {
+        const res = await axios.post(
+            API_URL,
+            {
+                model: "llama-3.1-8b-instant",
+                messages: [{ role: "user", content: prompt }]
+            },
+            {
+                headers: {
+                    "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+                    "Content-Type": "application/json"
                 }
-            ]
-        },
-        {
-            headers: {
-                "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-                "Content-Type": "application/json"
             }
-        }
-    );
-
-    return res.data.choices[0].message.content;
+        );
+        // Ensure we return the content string, not the whole object
+        return res.data.choices[0].message.content;
+    } catch (error) {
+        console.error("Groq Error:", error.response ? error.response.data : error.message);
+        return "Error: AI could not process this request.";
+    }
 }
 
-async function reviewCode(code) {
-    return await askAI(`
-You are a senior software engineer.
-
-Review this code and provide:
-- Bugs
-- Improvements
-- Code quality issues
-
-Code:
-${code}
-`);
+async function reviewCode(code) { 
+    // We added instructions to keep it short!
+    return await askAI(`You are a senior developer reviewing code. Be extremely concise. In bullet points, list only the most critical bugs and one brief improvement suggestion. Keep it under 4 sentences total:\n\n${code}`); 
 }
 
-async function explainCode(code) {
-    return await askAI(`
-Explain this code in simple terms for a beginner:
-
-${code}
-`);
+async function explainCode(code) { 
+    return await askAI(`Explain this code very briefly and simply for a beginner in 2 or 3 sentences max:\n\n${code}`); 
 }
-
 module.exports = { reviewCode, explainCode };
